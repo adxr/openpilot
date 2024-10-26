@@ -12,7 +12,7 @@ def byd_checksum(byte_key, dat):
   return (((((-1 * sum(first_bytes) + 0x9) & 0xf) + (-1*remainder + 5)) << 4) + ((-1 * sum(second_bytes) + 0x9) & 0xf)) & 0xff
 
 
-def create_steering_control(packer, CP, cam_msg: dict, angle, enabled,LKAS_Prepare):
+def create_steering_control(packer, CP, cam_msg: dict, angle, enabled,LKAS_Prepare,Counter):
   # 创建转向控制消息
   angle = max(min(angle, 400), -400)
 
@@ -29,7 +29,6 @@ def create_steering_control(packer, CP, cam_msg: dict, angle, enabled,LKAS_Prepa
       "TrafficSignRecognition_Result",#交通标志识别结果
       "LKAS_AlarmType",
       "SETME_0x3",
-      "Counter",# 控制计数器
   ]}
   values.update({
       "LKAS_Output" : angle,#LKAS控制
@@ -38,6 +37,7 @@ def create_steering_control(packer, CP, cam_msg: dict, angle, enabled,LKAS_Prepa
       "LKAS_OnOff" : 1,# 开/关
       "LeftLaneState" : enabled,#左车道状态
       "RightLaneState" : enabled,#右车道状态
+      "Counter" : Counter,# 控制计数器
   })
     # 生成转向控制消息并计算校验和
   data = packer.make_can_msg("MPC_LKAS_CTRL_AND_STATUS",0, values)[1]

@@ -20,88 +20,38 @@ ButtonType = car.CarState.ButtonEvent.Type
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
     super().__init__(dbc_name, CP, VM)
-    self.LKAS_Counter_last = 0  # 上一帧的转向值LKAS_Counter
+
     self.ACC_CMD_Counter_last = 0  # 上一帧的ACC_CMD_Counter
+
+    self.params = CarControllerParams(self.CP)  # 获取控制参数
 
     self.apply_steer_last = 0  # 上一帧的转向值
     self.packer = CANPacker(dbc_name)  # CAN打包器
-    self.brake_counter = 0  # 刹车计数器
 
-    self.sm = messaging.SubMaster(['longitudinalPlanSP'])  # 订阅纵向计划状态
-    self.param_s = Params()  # 参数存储
-    self.last_speed_limit_sign_tap_prev = False  # 上一次速度限制标志
-    self.speed_limit = 0.  # 当前速度限制
-    self.speed_limit_offset = 0  # 速度限制偏移量
-    self.timer = 0  # 计时器
-    self.final_speed_kph = 0  # 最终速度（公里每小时）
-    self.init_speed = 0  # 初始速度
-    self.current_speed = 0  # 当前速度
-    self.v_set_dis = 0  # 设置的速度
-    self.v_cruise_min = 0  # 最小巡航速度
-    self.button_type = 0  # 按钮类型
-    self.button_select = 0  # 按钮选择
-    self.button_count = 0  # 按钮计数
-    self.target_speed = 0  # 目标速度
-    self.t_interval = 7  # 时间间隔
-    self.slc_active_stock = False  # 速度限制控制状态
-    self.sl_force_active_timer = 0  # 强制激活计时器
-    self.v_tsc_state = 0  # 视觉转向控制状态
-    self.slc_state = 0  # 速度限制控制状态
-    self.m_tsc_state = 0  # 地图转向控制状态
-    self.cruise_button = None  # 巡航按钮
-    self.speed_diff = 0  # 速度差
-    self.v_tsc = 0  # 视觉转向速度
-    self.m_tsc = 0  # 地图转向速度
-    self.steady_speed = 0  # 稳定速度
+    self.lkas_counter_tx = 0 #lkas 发送计数器
+    self.last_steer_frame = 0  # 上次转向帧
 
-    self.lkas_Prepare_num = 0 #lkas准备数
+    self.lkas_Prepare_num = 0 #lkas准备计数
     self.lkas_Prepare = 0
     self.lkas_enabled = 0
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
-    # 如果车辆没有设置巡航速度
-    if not self.CP.pcmCruiseSpeed:
-        self.sm.update(0)  # 更新状态机，0代表没有数据更新的时间戳
-
-        # 如果 longitudinalPlanSP 数据已更新
-        if self.sm.updated['longitudinalPlanSP']:
-            # 从状态机获取各类控制状态和速度限制
-            self.v_tsc_state = self.sm['longitudinalPlanSP'].visionTurnControllerState
-            self.slc_state = self.sm['longitudinalPlanSP'].speedLimitControlState
-            self.m_tsc_state = self.sm['longitudinalPlanSP'].turnSpeedControlState
-            self.speed_limit = self.sm['longitudinalPlanSP'].speedLimit
-            self.speed_limit_offset = self.sm['longitudinalPlanSP'].speedLimitOffset
-            self.v_tsc = self.sm['longitudinalPlanSP'].visionTurnSpeed
-            self.m_tsc = self.sm['longitudinalPlanSP'].turnSpeed
-
-        # 设置最小巡航速度
-        self.v_cruise_min = BYD_V_CRUISE_MIN[CS.params_list.is_metric] * (CV.KPH_TO_MPH if not CS.params_list.is_metric else 1)
-
     can_sends = []  # 初始化发送的CAN消息列表
-
-    if not self.CP.pcmCruiseSpeed:
-        # 检查上次速度限制标志是否被触发
-        if not self.last_speed_limit_sign_tap_prev and CS.params_list.last_speed_limit_sign_tap:
-            self.sl_force_active_timer = self.frame
-            self.param_s.put_bool_nonblocking("LastSpeedLimitSignTap", False)
-        self.last_speed_limit_sign_tap_prev = CS.params_list.last_speed_limit_sign_tap
-
-        # 判断速度限制是否有效
-        sl_force_active = CS.params_list.speed_limit_control_enabled and (self.frame < (self.sl_force_active_timer * DT_CTRL + 2.0))
-        sl_inactive = not sl_force_active and (not CS.params_list.speed_limit_control_enabled or (True if self.slc_state == 0 else False))
-        sl_temp_inactive = not sl_force_active and (CS.params_list.speed_limit_control_enabled and (True if self.slc_state == 1 else False))
-        slc_active = not sl_inactive and not sl_temp_inactive
-
-        self.slc_active_stock = slc_active  # 保存当前速度限制控制状态
 
 
 
     # 临时禁用转向控制，当驾驶员握方向盘并触发故障时
     # hands_on_fault = CS.hands_on_level >= 3
     # lkas_enabled = CC.latActive and not hands_on_fault  # 确定是否启用车道保持辅助系统
-    # 发送转向控制命令
-    if CS.LKAS_Counter != self.LKAS_Counter_last:
+    # 转向控制（激活时 50Hz，非激活时 10Hz）
+    steer_step = self.params.STEER_STEP if CC.latActive else self.params.INACTIVE_STEER_STEP
+
+    if (self.frame - self.last_steer_frame) >= steer_step :
+        self.last_steer_frame = self.frame  # 更新上次转向帧
+
+        self.lkas_counter_tx = (self.lkas_counter_tx + 1) % 16  # lkas 发送计数器 每次循环将计数器递增，超过15后返回到0
+
         apply_steer = 0  # 初始化转向输出
         if CC.latActive:
             # 计算转向并根据驾驶员施加的扭矩设置限制
@@ -116,7 +66,7 @@ class CarController(CarControllerBase):
         self.apply_steer_last = apply_steer  # 保存上次应用的转向
 
         if CC.latActive and self.lkas_Prepare_num <10:
-            apply_steer = 0  # 初始化转向输出
+            apply_steer = 0  # 转向输出0
             self.lkas_Prepare = 1
             self.lkas_enabled = 0
             self.lkas_Prepare_num +=1
@@ -127,11 +77,10 @@ class CarController(CarControllerBase):
             self.lkas_Prepare = 0
             self.lkas_enabled = 0
             self.lkas_Prepare_num =0
-            apply_steer = 0  # 初始化转向输出
+            apply_steer = 0  # 转向输出0
 
 
-        can_sends.append(bydcan.create_steering_control(self.packer, self.CP,CS.cam_lkas, apply_steer, self.lkas_enabled,self.lkas_Prepare ))
-        self.LKAS_Counter_last=CS.LKAS_Counter
+        can_sends.append(bydcan.create_steering_control(self.packer, self.CP,CS.cam_lkas, apply_steer, self.lkas_enabled,self.lkas_Prepare,self.lkas_counter_tx ))
 
 
     # 发送ACC控制命令
