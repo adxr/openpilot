@@ -31,13 +31,13 @@ class CarControllerParams:
 
 
 @dataclass
-class MazdaCarDocs(CarDocs):
+class BydCarDocs(CarDocs):
   package: str = "All"
   car_parts: CarParts = field(default_factory=CarParts.common([CarHarness.byd]))  # 车辆部件初始化
 
 
 @dataclass(frozen=True, kw_only=True)
-class MazdaCarSpecs(CarSpecs):
+class BydCarSpecs(CarSpecs):
   tireStiffnessFactor: float = 0.7  # 轮胎刚度因子
 
 
@@ -57,7 +57,7 @@ class CAR(Platforms):
   # 定义不同车型的配置
   BYD_HAN_EV_21 = BydPlatformConfig(
       [BydCarDocs("Byd Han EV20-21")],
-      BydCarSpecs(mass=4217 * CV.LB_TO_KG, wheelbase=3.1, steerRatio=17.6)
+      BydCarSpecs(mass=1940 * CV.LB_TO_KG, wheelbase=2.9, steerRatio=15.6)
   )
 
 
