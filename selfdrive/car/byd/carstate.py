@@ -117,6 +117,7 @@ class CarState(CarStateBase):
     #         self.lkas_allowed_speed = False  # LKAS不允许的速度
     # else:
     #     self.lkas_allowed_speed = True
+
     if self.CP.minSteerSpeed > 0:
       if speed_kph > LKAS_LIMITS.ENABLE_SPEED:
         self.lkas_allowed_speed = True  # LKAS允许的速度
@@ -135,16 +136,15 @@ class CarState(CarStateBase):
     #获取当前巡航速度
     ret.cruiseState.speed = cp_cam.vl["ACC_HUD_ADAS"]["SetSpeed"] * CV.KPH_TO_MS
 
-    # if ret.cruiseState.enabled:
-    #     if not self.lkas_allowed_speed and self.acc_active_last:
-    #         self.low_speed_alert = True  # 低速警报
-    #     else:
-    #         self.low_speed_alert = False
-    self.low_speed_alert = False
+    if ret.cruiseState.enabled:
+      if not self.lkas_allowed_speed and self.acc_active_last:
+        self.low_speed_alert = True  # 低速警报
+      else:
+        self.low_speed_alert = False
 
     # 检查LKAS临时故障
-    # ret.steerFaultTemporary = self.lkas_allowed_speed and lkas_blocked
-    ret.steerFaultTemporary = False
+    ret.steerFaultTemporary = False if self.lkas_allowed_speed else True
+    # ret.steerFaultTemporary = False
 
     self.acc_active_last = ret.cruiseState.enabled  # 更新ACC激活状态
 

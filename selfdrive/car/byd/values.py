@@ -63,7 +63,7 @@ class CAR(Platforms):
 
 class LKAS_LIMITS:
   STEER_THRESHOLD = 15  # 转向阈值
-  DISABLE_SPEED = 5  # 禁用速度（公里/小时）
+  DISABLE_SPEED = 10  # 禁用速度（公里/小时）
   ENABLE_SPEED = 20  # 启用速度（公里/小时）
 
 
