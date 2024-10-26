@@ -39,7 +39,6 @@ class CarInterface(CarInterfaceBase):
   # 更新汽车状态
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam)
-
-    ret.events = self.create_common_events(ret).to_msg()
-
+    
+    ret.events = events.to_msg()
     return ret
