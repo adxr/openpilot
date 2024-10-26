@@ -61,6 +61,10 @@ MAZDA_V_CRUISE_MIN = {
   True: 30,
   False: int(20 * CV.MPH_TO_KPH),
 }
+BYD_V_CRUISE_MIN = {
+  True: 30,
+  False: int(20 * CV.MPH_TO_KPH),
+}
 VOLKSWAGEN_V_CRUISE_MIN = {
   True: 30,
   False: int(20 * CV.MPH_TO_KPH),
@@ -232,6 +236,8 @@ class VCruiseHelper:
           resume_buttons = (ButtonType.resumeCruise,)
       elif self.CP.carName == "mazda":
         initial = MAZDA_V_CRUISE_MIN[is_metric]
+      elif self.CP.carName == "byd":
+        initial = BYD_V_CRUISE_MIN[is_metric]
       elif self.CP.carName == "volkswagen":
         initial = VOLKSWAGEN_V_CRUISE_MIN[is_metric]
       elif self.CP.carName == "gm":
