@@ -143,8 +143,8 @@ class CarState(CarStateBase):
         self.low_speed_alert = False
 
     # 检查LKAS临时故障
-    ret.steerFaultTemporary = False if self.lkas_allowed_speed else True
-    # ret.steerFaultTemporary = False
+    # ret.steerFaultTemporary = False if self.lkas_allowed_speed else True
+    ret.steerFaultTemporary = False
 
     self.acc_active_last = ret.cruiseState.enabled  # 更新ACC激活状态
 
