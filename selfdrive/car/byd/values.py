@@ -17,13 +17,13 @@ Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])  
 class CarControllerParams:
   STEER_MAX = 300  # 理论最大转向扭矩
   STEER_DELTA_UP = 14  # 每次刷新增加的扭矩
-  STEER_DELTA_DOWN = 14  # 每次刷新减少的扭矩
+  STEER_DELTA_DOWN = 20  # 每次刷新减少的扭矩
   STEER_DRIVER_ALLOWANCE = 65  # 驾驶员允许的扭矩
   STEER_DRIVER_MULTIPLIER = 4  # 驾驶员扭矩权重
   STEER_DRIVER_FACTOR = 1  # 来自DBC的因子
-  STEER_ERROR_MAX = 350  # 扭矩命令和电机扭矩之间的最大差异
+  STEER_ERROR_MAX = 150  # 扭矩命令和电机扭矩之间的最大差异
 
-  STEER_STEP = 3  # 33 Hz
+  STEER_STEP = 2  # 50 Hz
   INACTIVE_STEER_STEP = 20  # Inactive control frames per command (20hz)
 
   ACCEL_MAX = 20               # m/s^2 最大加速度
