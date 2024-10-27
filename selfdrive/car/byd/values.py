@@ -23,7 +23,7 @@ class CarControllerParams:
   STEER_DRIVER_FACTOR = 1  # 来自DBC的因子
   STEER_ERROR_MAX = 350  # 扭矩命令和电机扭矩之间的最大差异
 
-  STEER_STEP = 2  # 50 Hz
+  STEER_STEP = 3  # 33 Hz
   INACTIVE_STEER_STEP = 20  # Inactive control frames per command (20hz)
 
   ACCEL_MAX = 20               # m/s^2 最大加速度
