@@ -5,7 +5,7 @@ from openpilot.common.params import Params
 from openpilot.common.numpy_fast import clip
 from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
-from openpilot.selfdrive.car import apply_driver_steer_torque_limits
+from openpilot.selfdrive.car import apply_meas_steer_torque_limits,apply_driver_steer_torque_limits
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.car.byd import bydcan
 from openpilot.selfdrive.car.byd.values import CarControllerParams
@@ -35,17 +35,14 @@ class CarController(CarControllerBase):
     self.lkas_Prepare = 0
     self.lkas_enabled = 0
 
+
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
     can_sends = []  # 初始化发送的CAN消息列表
 
-    # 转向控制（激活时 50Hz，非激活时 10Hz）
+    # 转向控制（激活时 50Hz，非激活时 20Hz）
     steer_step = self.params.STEER_STEP if CC.latActive else self.params.INACTIVE_STEER_STEP
-
     if (self.frame - self.last_steer_frame) >= steer_step :
-        self.last_steer_frame = self.frame  # 更新上次转向帧
-
-        self.lkas_counter_tx = (self.lkas_counter_tx + 1) % 16  # lkas 发送计数器 每次循环将计数器递增，超过15后返回到0
 
         apply_steer = 0  # 初始化转向输出
         if CC.latActive:
@@ -56,8 +53,12 @@ class CarController(CarControllerBase):
             # apply_torque_last: 上一个应用的转向扭矩。
             # driver_torque: 驾驶员施加的转向扭矩。
             # LIMITS: 包含转向相关限制的参数对象。
-            apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last,
-                                                            CS.out.steeringTorque, CarControllerParams)
+            # apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last,
+            #                                                 CS.out.steeringTorque, CarControllerParams)
+            # *** steer torque ***
+            apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last,
+                                                            CS.out.steeringTorqueEps, self.params)
+
         self.apply_steer_last = apply_steer  # 保存上次应用的转向
 
         if CC.latActive and self.lkas_Prepare_num <10:
@@ -74,8 +75,11 @@ class CarController(CarControllerBase):
             self.lkas_Prepare_num =0
             apply_steer = 0  # 转向输出0
 
-        can_sends.append(bydcan.create_steering_control(self.packer, self.CP,CS.cam_lkas, apply_steer, self.lkas_enabled,self.lkas_Prepare,self.lkas_counter_tx ))
-
+        can_sends.append(bydcan.create_steering_control(self.packer, self.CP,CS.cam_lkas, apply_steer,
+                                                        self.lkas_enabled,self.lkas_Prepare,self.lkas_counter_tx ))
+        #更新计数器
+        self.lkas_counter_tx = (self.lkas_counter_tx + 1) % 16  # lkas 发送计数器 每次循环将计数器递增，超过15后返回到0
+        self.last_steer_frame = self.frame  # 更新上次转向帧
 
     # 发送ACC控制命令
     if CS.ACC_CMD_Counter != self.ACC_CMD_Counter_last:
