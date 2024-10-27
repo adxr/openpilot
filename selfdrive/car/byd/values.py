@@ -59,7 +59,7 @@ class CAR(Platforms):
   # 定义不同车型的配置
   BYD_HAN_EV_21 = BydPlatformConfig(
       [BydCarDocs("Byd Han EV20-21")],
-      BydCarSpecs(mass=1940 * CV.LB_TO_KG, wheelbase=2.9, steerRatio=15.6)
+      BydCarSpecs(mass=1940 * CV.LB_TO_KG, wheelbase=2.9, steerRatio=15.6,tireStiffnessFactor=0.7983)
   )
 
 

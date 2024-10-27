@@ -20,11 +20,11 @@ ButtonType = car.CarState.ButtonEvent.Type
 class CarController(CarControllerBase):
   def __init__(self, dbc_name, CP, VM):
     super().__init__(dbc_name, CP, VM)
+    #不用
 
+    #常用
     self.ACC_CMD_Counter_last = 0  # 上一帧的ACC_CMD_Counter
-
     self.params = CarControllerParams(self.CP)  # 获取控制参数
-
     self.apply_steer_last = 0  # 上一帧的转向值
     self.packer = CANPacker(dbc_name)  # CAN打包器
 
@@ -39,11 +39,6 @@ class CarController(CarControllerBase):
     actuators = CC.actuators
     can_sends = []  # 初始化发送的CAN消息列表
 
-
-
-    # 临时禁用转向控制，当驾驶员握方向盘并触发故障时
-    # hands_on_fault = CS.hands_on_level >= 3
-    # lkas_enabled = CC.latActive and not hands_on_fault  # 确定是否启用车道保持辅助系统
     # 转向控制（激活时 50Hz，非激活时 10Hz）
     steer_step = self.params.STEER_STEP if CC.latActive else self.params.INACTIVE_STEER_STEP
 
@@ -78,7 +73,6 @@ class CarController(CarControllerBase):
             self.lkas_enabled = 0
             self.lkas_Prepare_num =0
             apply_steer = 0  # 转向输出0
-
 
         can_sends.append(bydcan.create_steering_control(self.packer, self.CP,CS.cam_lkas, apply_steer, self.lkas_enabled,self.lkas_Prepare,self.lkas_counter_tx ))
 
