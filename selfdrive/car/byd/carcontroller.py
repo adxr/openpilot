@@ -53,11 +53,8 @@ class CarController(CarControllerBase):
             # apply_torque_last: 上一个应用的转向扭矩。
             # driver_torque: 驾驶员施加的转向扭矩。
             # LIMITS: 包含转向相关限制的参数对象。
-            # apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last,
-            #                                                 CS.out.steeringTorque, CarControllerParams)
-            # *** steer torque ***
-            apply_steer = apply_meas_steer_torque_limits(new_steer, self.apply_steer_last,
-                                                            CS.out.steeringTorqueEps, self.params)
+            apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last,
+                                                            CS.out.steeringTorque, CarControllerParams)
 
         self.apply_steer_last = apply_steer  # 保存上次应用的转向
 
